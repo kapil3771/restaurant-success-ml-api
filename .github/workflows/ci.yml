@@ -2,9 +2,9 @@ name: ML API CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test-and-build:
@@ -24,14 +24,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run basic import test
+      - name: Basic import sanity check
         run: |
           python -c "from app.main import app; print('App import OK')"
 
       - name: Build Docker image
         run: |
           docker build -t restaurant-ml-api:ci .
-        
-      - name: Run smoke tests
+
+      - name: Run container smoke test
         run: |
-          python -m pytest -q
+          docker run -d -p 8000:8000 \
+            --name api_test \
+            restaurant-ml-api:ci
+
+          sleep 10
+
+          curl -f http://localhost:8000/health
+
+          docker rm -f api_test
